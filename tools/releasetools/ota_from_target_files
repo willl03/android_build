@@ -588,12 +588,6 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
 
   system_progress = 0.75
 
-  script.Print(" ");
-  script.Print("******************************************")
-  script.Print("************     W03 CM12    *************")
-  script.Print("******************************************")
-  script.Print(" ")
-
   if OPTIONS.wipe_user_data:
     system_progress -= 0.1
   if HasVendorPartition(input_zip):
@@ -688,8 +682,6 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
 
   if OPTIONS.extra_script is not None:
     script.AppendExtra(OPTIONS.extra_script)
-
-  script.Print(" ")
 
   script.UnmountAll()
 
