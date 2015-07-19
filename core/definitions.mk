@@ -355,6 +355,10 @@ define find-other-java-files
 	$(call find-subdir-files,$(1) -name "*.java" -and -not -name ".*")
 endef
 
+define find-other-aidl-files
+	$(call find-subdir-files,$(1) -name "*.aidl" -and -not -name ".*")
+endef
+
 define find-other-html-files
 	$(call find-subdir-files,$(1) -name "*.html" -and -not -name ".*")
 endef
@@ -2233,6 +2237,7 @@ include $(BUILD_SYSTEM)/distdir.mk
 
 # Include any vendor specific definitions.mk file
 -include $(TOPDIR)vendor/*/build/core/definitions.mk
+-include $(TOPDIR)device/*/build/core/definitions.mk
 
 # broken:
 #	$(foreach file,$^,$(if $(findstring,.a,$(suffix $file)),-l$(file),$(file)))

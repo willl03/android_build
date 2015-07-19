@@ -220,7 +220,6 @@ def BuildImage(in_dir, prop_dict, out_file,
   build_command = []
   fs_type = prop_dict.get("fs_type", "")
   run_fsck = False
-
   is_verity_partition = "verity_block_device" in prop_dict
   verity_supported = prop_dict.get("verity") == "true"
   # adjust the partition size to make room for the hashes if this is to be verified
@@ -237,17 +236,39 @@ def BuildImage(in_dir, prop_dict, out_file,
     if "extfs_sparse_flag" in prop_dict:
       build_command.append(prop_dict["extfs_sparse_flag"])
       #run_fsck = True
-    build_command.extend([in_dir, out_file, fs_type,
-                          prop_dict["mount_point"]])
+    if "is_userdataextra" in prop_dict:
+      build_command.extend([in_dir, out_file, fs_type,
+                           "data"])
+    else:
+      build_command.extend([in_dir, out_file, fs_type,
+                            prop_dict["mount_point"]])
     build_command.append(prop_dict["partition_size"])
     if "journal_size" in prop_dict:
       build_command.extend(["-j", prop_dict["journal_size"]])
     if "timestamp" in prop_dict:
       build_command.extend(["-T", str(prop_dict["timestamp"])])
+    else:
+      #Timestamp not provided in property_dict.
+      #Lets try to find the build.prop file and get the timestamp from there
+      #instead
+      path = in_dir + "/build.prop"
+      if os.path.exists(path):
+        with open(path) as f:
+          lines = f.readlines()
+          for line in lines:
+            line = line.strip()
+            if line.startswith("ro.build.date.utc"):
+              name, value = line.split("=", 1)
+              print "read ro.build.date.utc from build.prop as ", value
+              build_command.extend(["-T", value])
+      else:
+        print "unable to open build.prop file..Image will be built using system time"
     if fs_config is not None:
       build_command.extend(["-C", fs_config])
     if block_list is not None:
       build_command.extend(["-B", block_list])
+    if "transparent_compression_method" in prop_dict:
+      build_command.extend(["-M", prop_dict["transparent_compression_method"]])
     if fc_config is not None:
       build_command.append(fc_config)
     elif "selinux_fc" in prop_dict:
@@ -312,7 +333,8 @@ def ImagePropFromGlobalDict(glob_dict, mount_point):
       "skip_fsck",
       "verity",
       "verity_key",
-      "verity_signer_cmd"
+      "verity_signer_cmd",
+      "transparent_compression_method"
       )
   for p in common_props:
     copy_prop(p, p)
@@ -320,6 +342,7 @@ def ImagePropFromGlobalDict(glob_dict, mount_point):
   d["mount_point"] = mount_point
   if mount_point == "system":
     copy_prop("fs_type", "fs_type")
+    copy_prop("system_fs_type", "fs_type")
     copy_prop("system_size", "partition_size")
     copy_prop("system_journal_size", "journal_size")
     copy_prop("system_verity_block_device", "verity_block_device")
@@ -328,6 +351,11 @@ def ImagePropFromGlobalDict(glob_dict, mount_point):
     copy_prop("fs_type", "fs_type")
     copy_prop("userdata_fs_type", "fs_type")
     copy_prop("userdata_size", "partition_size")
+  elif mount_point == "data_extra":
+    copy_prop("fs_type", "fs_type")
+    copy_prop("userdataextra_size", "partition_size")
+    copy_prop("userdataextra_name", "partition_name")
+    d["is_userdataextra"] = True
   elif mount_point == "cache":
     copy_prop("cache_fs_type", "fs_type")
     copy_prop("cache_size", "partition_size")
